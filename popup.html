@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>SpeakGPT</title>
+  </head>
+  <body>
+    <h1>ChatGPT Text-to-Speech Extension</h1>
+    <form>
+      <label for="voice">Voice:</label><br>
+      <select id="voice" name="voice">
+        <option value="en-US_AllisonVoice">Allison (US English)</option>
+        <option value="en-US_LisaVoice">Lisa (US English)</option>
+        <option value="en-GB_KateVoice">Kate (British English)</option>
+      </select><br>
+      <label for="speed">Speed:</label><br>
+      <input type="range" min="0.5" max="2" step="0.1" value="1" id="speed" name="speed"><br>
+    </form>
+    <button id="start-button">Start</button>
+    <button id="stop-button" disabled>Stop</button>
+  </body>
+</html>

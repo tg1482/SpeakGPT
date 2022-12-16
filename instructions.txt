@@ -1,0 +1,6 @@
+i want you to help me develop a chrome extension to read the output from chatgpt. Here are the requirements:
+
+* you will have to be activated by the user from popup.html at least once 
+* once you've been activated, you will read the latest chatgpt response in the selected voice and speed. these will also be set in popup.html
+* you will read each sentence once by one and highlight the sentence that you are currently reading
+* once you're done, you will wait for the next response and start reading that automatically. 
