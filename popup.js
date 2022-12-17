@@ -18,22 +18,12 @@ startButton.addEventListener("click", () => {
     // get the latest chatgpt response
     getChatGptResponse().then((text) => {
         // start speaking the response, one sentence at a time
-        speak(response);
+        speak(text);
       }).catch((error) => {
         // Handle the error
         console.error(error.message);
       });
 
-
-    // enable the start button and disable the stop button
-    startButton.disabled = false;
-    stopButton.disabled = true;
-});
-  
-// listen for the stop button click event
-stopButton.addEventListener("click", () => {
-    // stop speaking
-    stop();
 
     // enable the start button and disable the stop button
     startButton.disabled = false;
@@ -52,12 +42,14 @@ function getChatGptResponse() {
         // Send a message to content.js in the active tab
         chrome.tabs.sendMessage(tabs[0].id, { command: 'getChatGptResponse' }, (response) => {
           
-            console.log('received response...')
+            console.log('received response...');
+
+            const textResponse = response.text
             
             // Check if the response is valid
-            if (response && response.text) {
+            if (typeof textResponse === 'string') {
             // Resolve the Promise with the text
-            resolve(response.text);
+            resolve(textResponse);
             } else {
             // Reject the Promise with an error
             reject(new Error('Error getting text from chatGPT response text box'));
@@ -79,35 +71,37 @@ const splitIntoSentences = text => {
 };
 
 // function to speak the given text, one sentence at a time
-const speak = text => {
-  // split the text into sentences
-  const sentences = splitIntoSentences(text);
+const speak = (text) => {
 
-  // loop through the sentences
-  for (const sentence of sentences) {
-    // set the text on the utterance
-    utterance.text = sentence;
+    // listen for the stop button click event
+    stopButton.addEventListener("click", () => {
+        // stop speaking
+        stop();
 
-    // get the selected voice and speed from the form
-    const voice = voiceSelect.value;
-    const speed = speedInput.value;
+        // enable the start button and disable the stop button
+        startButton.disabled = false;
+        stopButton.disabled = true;
+    });
 
-    // set the voice and speed on the utterance
-    utterance.voice = synth.getVoices().find(v => v.name === voice);
-    utterance.rate = speed;
+    // split the text into sentences
+    const sentences = splitIntoSentences(text);
 
-    // listen for the onboundary event to highlight the current sentence
-    synth.onboundary = e => {
-      // create a new span element for the current sentence
-      const span = document.createElement("span");
-      span.textContent = e.characters;
-      span.classList.add("highlight");
-      document.body.appendChild(span);
-    };
+    // loop through the sentences
+    for (const sentence of sentences) {
+        // set the text on the utterance
+        utterance.text = sentence;
 
-    // speak the sentence
-    synth.speak(utterance);
-  }
+        // get the selected voice and speed from the form
+        const voice = voiceSelect.value;
+        const speed = speedInput.value;
+
+        // set the voice and speed on the utterance
+        utterance.voice = synth.getVoices().find(v => v.name === voice);
+        utterance.rate = speed;
+
+        // speak the sentence
+        synth.speak(utterance);
+    }
 };
 
 // function to stop speaking
