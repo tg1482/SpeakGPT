@@ -1,17 +1,21 @@
-// listen for messages from the background script
+// Listen for messages from popup.js
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    // check if the message is from the background script
-    if (sender.tab) {
-      return;
-    }
-  
-    // check if the message is a request to get the latest chatgpt response
-    if (request.type === "get-chatgpt-response") {
-      // find the chatgpt response on the page
-      const response = findChatGptResponse();
-  
-      // send the response back to the background script
-      sendResponse({ response });
+    // Check if the message is a getChatGptResponse message
+    if (request.command === 'getChatGptResponse') {
+
+        console.log('start looking for response');
+
+        // Select the most recent response
+        const response = findChatGptResponse()
+    
+        // Check if the response exists
+        if (response) {
+            // Send the response text to popup.js
+            sendResponse({ text: response.textContent });
+        } else {
+            // Send an error to popup.js
+            sendResponse({ error: 'Error getting text from chatGPT response text box' });
+        }
     }
   });
   
@@ -22,7 +26,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // and getElementsByTagName() to find the chatgpt response element
     // and then use its textContent property to get the response text
     // you may need to adjust this function depending on the structure and layout of your page
-    const responseElement = document.querySelector(".chatgpt-response");
-    return responseElement ? responseElement.textContent : "";
+    
+    // const responseElement = document.querySelector(".chatgpt-response");
+    // return responseElement ? responseElement.textContent : false;
+    const element = document.getElementsByClassName('react-scroll-to-bottom--css-wczmr-79elbk h-full dark:bg-gray-800')[0];
+    const textContent = element.innerText || element.textContent;
+
+    return textContent
   };
-  
