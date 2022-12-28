@@ -5,46 +5,17 @@ const startButton = document.getElementById("start-button");
 const stopButton = document.getElementById("stop-button");
 
 // get a reference to the voice and speed form elements
-const voiceSelect = document.getElementById("voice");
-const speedInput = document.getElementById("speed");
-
-
-// Event Listeners
-
-// // listen for the stop button click event
-// stopButton.addEventListener("click", () => {
-//     // stop speaking
-//     stopSpeaking();
-
-//     // enable the start button and disable the stop button
-//     startButton.disabled = false;
-//     stopButton.disabled = true;
-// });
+let voiceSelect = document.getElementById("voice");
+let speedInput = document.getElementById("speed");
 
 // listen for the start button click event
 startButton.addEventListener("click", () => {
+  // get the latest chatgpt response
+  getChatGptResponse()
+    .then(text => startSpeaking(text))
+    .catch(error => console.error(error.message));
 
-    console.log('started!');
-
-    // disable the start button and enable the stop button
-    startButton.disabled = true;
-    stopButton.disabled = false;
-    
-    // get the latest chatgpt response
-    getChatGptResponse().then((text) => {
-        // start speaking the response, one sentence at a time
-        startSpeaking(text);
-      }).catch((error) => {
-        // Handle the error
-        console.error(error.message);
-      });
-
-
-    // enable the start button and disable the stop button
-    startButton.disabled = false;
-    stopButton.disabled = true;
 });
-
 
 // Function to retrieve the latest text from the chatGPT response text box
 function getChatGptResponse() {
@@ -62,107 +33,80 @@ function getChatGptResponse() {
 
         const textResponse = response.text
         
-        // Check if the response is valid
         if (typeof textResponse === 'string') {
-        // Resolve the Promise with the text
-        resolve(textResponse);
+          // Resolve the Promise with the text
+          resolve(textResponse);
         } else {
-        // Reject the Promise with an error
-        reject(new Error('Error getting text from chatGPT response text box'));
+          // Reject the Promise with an error
+          reject(new Error('Error getting text from chatGPT response text box'));
         }
       });
     });
   });
-}
+};
 
-const startSpeaking = (text) => {
-  // create a new SpeechSynthesisUtterance instance
-  const utterance = new SpeechSynthesisUtterance();
+// function to stop speaking
+const stopSpeaking = synth => {
+  return new Promise((resolve, reject) => {
+    synth.cancel();
+    resolve();
+  });
+};
 
-  // get a reference to the window.speechSynthesis object
-  const synth = window.speechSynthesis;
 
-  // split the text into sentences
+async function startSpeaking(text) {
+
+  const {utterance, synth} = initSpeechObjects();
   const sentences = splitIntoSentences(text);
-
-  // create a variable to keep track of whether speaking should continue
   let shouldContinue = true;
 
   // add a click event listener to the stop button
-  stopButton.addEventListener('click', () => {
-    // set shouldContinue to false when the stop button is clicked
+  stopButton.addEventListener('click', () => stopSpeaking(synth).then(() => {
     shouldContinue = false;
+  }));
 
-    // cancel any speech that is currently being generated
-    synth.cancel();
-  });
-
-  // // add an onend event listener to the utterance
-  // utterance.onend = () => {
-  //   // set shouldContinue to false when the utterance finishes speaking
-  //   shouldContinue = false;
-  // };
-
-  // loop through the sentences
   for (const sentence of sentences) {
-    // check if speaking should continue
+    console.log(`shouldContinue: ${shouldContinue}`);
     if (!shouldContinue) {
+      console.log('breaking loop now');
       break;
     }
 
-    // set the text on the utterance
-    utterance.text = sentence;
-
-    // get the selected voice and speed from the form
-    const voice = voiceSelect.value;
-    const speed = speedInput.value;
-
-    // set the voice and speed on the utterance
-    utterance.voice = synth.getVoices().find(v => v.name === voice);
-    utterance.rate = speed;
-
-    // speak the sentence
-    synth.speak(utterance);
+    await speakSentence(sentence, utterance, synth);
   }
 };
 
-// // function to speak the given text, one sentence at a time
-// const startSpeaking = (text) => {
+const initSpeechObjects = () => {
+  // get the selected voice and speed from the form
+  let voice = voiceSelect.value;
+  let speed = speedInput.value;
 
-//     // create a new SpeechSynthesisUtterance instance
-//     const utterance = new SpeechSynthesisUtterance();
+  // create a new SpeechSynthesisUtterance instance
+  const utterance = new SpeechSynthesisUtterance();
+  const synth = window.speechSynthesis;
 
-//     // get a reference to the window.speechSynthesis object
-//     const synth = window.speechSynthesis;
+  // set the voice and speed on the utterance
+  utterance.voice = synth.getVoices().find(v => v.name === voice);
+  utterance.rate = speed;
+  
+  return {utterance, synth}
+};
 
-//     // split the text into sentences
-//     const sentences = splitIntoSentences(text);
-
-//     // loop through the sentences
-//     for (const sentence of sentences) {
-//         // set the text on the utterance
-//         utterance.text = sentence;
-
-//         // get the selected voice and speed from the form
-//         const voice = voiceSelect.value;
-//         const speed = speedInput.value;
-
-//         // set the voice and speed on the utterance
-//         utterance.voice = synth.getVoices().find(v => v.name === voice);
-//         utterance.rate = speed;
-
-//         // speak the sentence
-//         synth.speak(utterance);
-//     }
-// };
+const speakSentence = (sentence, utterance, synth) => {
+  return new Promise((resolve, reject) => {
+    // set the text on the utterance
+    utterance.text = sentence;
+    console.log(`speaking sentence ${sentence}`);
+    // speak the sentence
+    synth.speak(utterance);
+    // resolve the promise when the speaking is finished
+    utterance.onend = () => resolve();
+  });
+}
 
 // function to split the text into sentences
 const splitIntoSentences = text => {
   return text.match(/[^\.!\?]+[\.!\?]+/g);
 };
 
-// function to stop speaking
-const stopSpeaking = () => {
-  synth.cancel();
-};
 

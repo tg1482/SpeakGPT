@@ -1,11 +1,5 @@
 console.log('I am loaded...')
 
-// function openPopup() {
-//     window.open("popup.html", "Popup", "height=500,width=500");
-// }
-  
-// window.onload = openPopup;  
-
 // Listen for messages from popup.js
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // Check if the message is a getChatGptResponse message
