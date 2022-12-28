@@ -5,8 +5,6 @@ const startButton = document.getElementById("start-button");
 const stopButton = document.getElementById("stop-button");
 
 // get a reference to the voice and speed form elements
-let voiceSelect = document.getElementById("voice");
-let speedInput = document.getElementById("speed");
 
 // listen for the start button click event
 startButton.addEventListener("click", () => {
@@ -14,30 +12,19 @@ startButton.addEventListener("click", () => {
   getChatGptResponse()
     .then(text => startSpeaking(text))
     .catch(error => console.error(error.message));
-
 });
 
 // Function to retrieve the latest text from the chatGPT response text box
 function getChatGptResponse() {
-  // Return a new Promise
   return new Promise((resolve, reject) => {
     // Get the current tab
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      
-      console.log('sending message to content.js...')
-      
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {      
       // Send a message to content.js in the active tab
       chrome.tabs.sendMessage(tabs[0].id, { command: 'getChatGptResponse' }, (response) => {
-        
-        console.log('received response...');
-
         const textResponse = response.text
-        
         if (typeof textResponse === 'string') {
-          // Resolve the Promise with the text
           resolve(textResponse);
         } else {
-          // Reject the Promise with an error
           reject(new Error('Error getting text from chatGPT response text box'));
         }
       });
@@ -53,20 +40,36 @@ const stopSpeaking = synth => {
   });
 };
 
+const getVoice = (synth, voice) => {
+  return synth.getVoices().find(v => v.name === voice);
+}
 
 async function startSpeaking(text) {
+  let voiceSelect = document.getElementById("voice");
+  let speedInput = document.getElementById("speed");
 
-  const {utterance, synth} = initSpeechObjects();
+  const {utterance, synth} = initSpeechObjects(voiceSelect, speedInput);
   const sentences = splitIntoSentences(text);
+  
   let shouldContinue = true;
+
+  console.log(synth.getVoices());
 
   // add a click event listener to the stop button
   stopButton.addEventListener('click', () => stopSpeaking(synth).then(() => {
     shouldContinue = false;
   }));
+  voiceSelect.addEventListener("change", event => {
+    console.log("Voice changed", event.target.value);
+    new_voice = event.target.value;
+    utterance.voice = getVoice(synth, new_voice);
+  });
+  speedInput.addEventListener("change", event => {
+    console.log("Speed changed", event.target.value);
+    utterance.rate = event.target.value;;
+  });
 
   for (const sentence of sentences) {
-    console.log(`shouldContinue: ${shouldContinue}`);
     if (!shouldContinue) {
       console.log('breaking loop now');
       break;
@@ -76,17 +79,15 @@ async function startSpeaking(text) {
   }
 };
 
-const initSpeechObjects = () => {
-  // get the selected voice and speed from the form
-  let voice = voiceSelect.value;
-  let speed = speedInput.value;
+const initSpeechObjects = (voiceSelect, speedInput) => {
+  const voice = voiceSelect.value;
+  const speed = speedInput.value;
 
-  // create a new SpeechSynthesisUtterance instance
   const utterance = new SpeechSynthesisUtterance();
   const synth = window.speechSynthesis;
 
   // set the voice and speed on the utterance
-  utterance.voice = synth.getVoices().find(v => v.name === voice);
+  utterance.voice = getVoice(synth, voice);
   utterance.rate = speed;
   
   return {utterance, synth}
